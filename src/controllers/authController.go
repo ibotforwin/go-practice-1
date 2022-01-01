@@ -117,3 +117,54 @@ func Logout(c *fiber.Ctx) error {
 		"message": "success",
 	})
 }
+
+func UpdateInfo(c *fiber.Ctx) error {
+	var data map[string]string
+
+	//If c.BodyParser generates an error, return error. If err == nil, do nothing.
+	if err := c.BodyParser(&data); err != nil {
+		return err
+	}
+	id, _ := middlewares.GetUserId(c)
+
+	user := models.User{
+		Id:        id,
+		FirstName: data["first_name"],
+		LastName:  data["last_name"],
+		Email:     data["email"],
+	}
+
+	database.DB.Model(&user).Updates(&user)
+
+	return c.JSON(user)
+}
+func UpdatePassword(c *fiber.Ctx) error {
+	var data map[string]string
+
+	//If c.BodyParser generates an error, return error. If err == nil, do nothing.
+	if err := c.BodyParser(&data); err != nil {
+		return err
+	}
+
+	if data["password"] != data["password_confirm"] {
+		//If the password does not match
+		//Set status to 400
+		c.Status(400)
+		//We use fiber.Map to fill response body with the error message and
+		//set the JSON of c to that response body.
+		return c.JSON(fiber.Map{
+			"message": "passwords do not match",
+		})
+	}
+
+	id, _ := middlewares.GetUserId(c)
+
+	user := models.User{
+		Id: id,
+	}
+
+	user.SetPassword(data["password"])
+	database.DB.Model(&user).Updates(&user)
+
+	return c.JSON(user)
+}
